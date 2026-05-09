@@ -6,6 +6,12 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 # Add src to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -164,7 +170,7 @@ def plot_error_analysis(series: pd.Series, metrics: List[dict], last_true: pd.Se
     plt.tight_layout()
     save_plot(fig, config.error_plot, dpi=300)
     plt.close(fig)
-    print(f" Error analysis plot saved -> {config.error_plot}")
+    logger.error(f" Error analysis plot saved -> {config.error_plot}")
 
 
 def main() -> None:
@@ -179,7 +185,7 @@ def main() -> None:
     
     # Load series
     series = load_series(config)
-    print(f"Loaded {len(series)} data points")
+    logger.info(f"Loaded {len(series)} data points")
     
     # Rolling origin evaluation
     metrics, last_true, last_forecast = rolling_origin_metrics(series, config)
@@ -187,15 +193,15 @@ def main() -> None:
     if metrics:
         mean_mae = np.mean([m["MAE"] for m in metrics])
         mean_mase = np.mean([m["MASE"] for m in metrics])
-        print(f"\nRolling Origin Evaluation Results:")
-        print(f"  Mean MAE: {mean_mae:.4f}")
-        print(f"  Mean MASE: {mean_mase:.4f}")
+        logger.info(f"\nRolling Origin Evaluation Results:")
+        logger.info(f"  Mean MAE: {mean_mae:.4f}")
+        logger.info(f"  Mean MASE: {mean_mase:.4f}")
     
     # Create visualization
-    print("\nCreating visualization...")
+    logger.info("\nCreating visualization...")
     plot_error_analysis(series, metrics, last_true, last_forecast, config)
     
-    print("\n Forecast error analysis complete")
+    logger.error("\n Forecast error analysis complete")
 
 
 if __name__ == "__main__":
