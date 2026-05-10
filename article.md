@@ -110,54 +110,35 @@ Let's examine serial correlation in a distributed lag model using data from FRED
 
 **Function to fetch data from FRED:**
 
-    import statsmodels.api as sm
-    import statsmodels.graphics.tsaplots as tsaplots
-    from statsmodels.stats.diagnostic import acorr\_breusch\_godfrey
-    from statsmodels.regression.linear\_model import GLS, GLSAR
-    from datetime import datetime
-    from pandas\_datareader import data as web
-    import matplotlib.pyplot as plt
-    from visualization import plot\_time\_series, plot\_decomposition}
-    def get_fred_data(series_id, start_date="2000-01-01", end_date=None):
-        if end_date is None:
-            end_date = datetime.now().strftime("%Y-%m-%d")
-        df = web.DataReader(series_id, 'fred', start_date, end_date)
-        return df.dropna()
+import statsmodels.api as sm import statsmodels.graphics.tsaplots as tsaplots from statsmodels.stats.diagnostic import acorr\_breusch\_godfrey from statsmodels.regression.linear\_model import GLS, GLSAR from datetime import datetime from pandas\_datareader import data as web import matplotlib.pyplot as plt from visualization import plot\_time\_series, plot\_decomposition} def get_fred_data(series_id, start_date="2000-01-01", end_date=None): if end_date is None: end_date = datetime.now().strftime("%Y-%m-%d") df = web.DataReader(series_id, 'fred', start_date, end_date) return df.dropna()
 
 **Fetch University of Michigan Consumer Sentiment Index (MICH):**
 
-    series_id = "MICH"
-    mich_data = get_fred_data(series_id)
-    mich_data = mich_data.pct_change().dropna()  # Convert to percentage change
+series_id = "MICH" mich_data = get_fred_data(series_id) mich_data = mich_data.pct_change().dropna() # Convert to percentage change
 
 **Prepare DataFrame:**
 
-    mich_data = mich_data.rename(columns={series_id: "MICH"})
-    mich_data["Date"] = mich_data.index  # Ensure a date column for plotting
+mich_data = mich_data.rename(columns={series_id: "MICH"}) mich_data["Date"] = mich_data.index # Ensure a date column for plotting
 
 **Create lagged MICH values:**
 
-    for lag in range(1, 3):  # Include 2 lags
-        mich_data[f"MICH_lag{lag}"] = mich_data["MICH"].shift(lag)
+for lag in range(1, 3): # Include 2 lags mich_data[f"MICH_lag{lag}"] = mich_data["MICH"].shift(lag)
 
 **Drop missing values due to lagging:**
 
-    mich_data.dropna(inplace=True)
+mich_data.dropna(inplace=True)
 
 **Define independent and dependent variables:**
 
-    X_lags = ["MICH", "MICH_lag1", "MICH_lag2"]
-    X_matrix = sm.add_constant(mich_data[X_lags])  # Add intercept
-    y_vector = mich_data["MICH"]  # Target is MICH itself (can be changed)
+X_lags = ["MICH", "MICH_lag1", "MICH_lag2"] X_matrix = sm.add_constant(mich_data[X_lags]) # Add intercept y_vector = mich_data["MICH"] # Target is MICH itself (can be changed)
 
 **Fit a distributed lag model:**
 
-    model = sm.OLS(y_vector, X_matrix).fit()
+model = sm.OLS(y_vector, X_matrix).fit()
 
 **Perform the Breusch-Godfrey test for serial correlation:**
 
-    bg_test = acorr_breusch_godfrey(model, nlags=2)
-    print(f"Breusch-Godfrey Test p-value: {bg_test[1]:.4f}")
+bg_test = acorr_breusch_godfrey(model, nlags=2) print(f"Breusch-Godfrey Test p-value: {bg_test[1]:.4f}")
 
 Breusch-Godfrey Test (p-value = 0.0000) test checks for serial correlation in the residuals. A p-value of 0.0000 rejects the null hypothesis of no serial correlation. So we conclude that the residuals exhibit autocorrelation, suggesting that the model's errors are not independent.
 
@@ -169,8 +150,7 @@ If serial correlation is detected, there are several ways to correct it:
 
 GLS modifies OLS by accounting for the structure of the serial correlation:
 
-    gls_model = GLS(y_vector, X_matrix).fit()
-    print(gls_model.summary())
+gls_model = GLS(y_vector, X_matrix).fit() print(gls_model.summary())
 
 GLS (Generalized Least Squares) model shows MICH coefficient = 1.0000 with a t-statistic of  0. MICH_lag1 and MICH_lag2 have near-zero effects, with high p-values. R² = 1.000, suggesting a perfect fit (which is highly suspicious). The Durbin-Watson statistic = 2.392, close to 2, indicating some correction of autocorrelation.
 
@@ -178,8 +158,7 @@ GLS (Generalized Least Squares) model shows MICH coefficient = 1.0000 with a t-s
 
 The Cochrane-Orcutt method uses an iterative procedure to transform the regression model to eliminate serial correlation:
 
-    cochrane_orcutt = GLSAR(y_vector, X_matrix, rho=1).iterative_fit()
-    print(cochrane_orcutt.summary())
+cochrane_orcutt = GLSAR(y_vector, X_matrix, rho=1).iterative_fit() print(cochrane_orcutt.summary())
 
 GLSAR (Cochrane-Orcutt) shows MICH coefficient remains 1.0000 which confirms a near-perfect correlation. MICH_lag1 and MICH_lag2 now become significant (p \< 0.05), suggesting they add some explanatory power. The Durbin-Watson statistic = 1.533, still indicating some autocorrelation but improved from the GLS model.
 
@@ -187,8 +166,7 @@ GLSAR (Cochrane-Orcutt) shows MICH coefficient remains 1.0000 which confirms a n
 
 Newey-West Robust Standard Errors provide valid inference if we can't correct the model structure:
 
-    model_robust = model.get_robustcov_results(cov_type="HAC", maxlags=2)
-    print(model_robust.summary())
+model_robust = model.get_robustcov_results(cov_type="HAC", maxlags=2) print(model_robust.summary())
 
 Newey-West (aka OLS with HAC) adjusts standard errors for autocorrelation and heteroscedasticity. Surprisingly, the coefficients remain nearly unchanged. MICH_lag1 and MICH_lag2 remain insignificant, suggesting they are not contributing much explanatory power. The Durbin-Watson = 2.392, close to 2, indicating some reduction in autocorrelation.
 
@@ -196,17 +174,11 @@ Newey-West (aka OLS with HAC) adjusts standard errors for autocorrelation and he
 
 To diagnose serial correlation, we can plot the Autocorrelation Function (ACF) of the residuals:
 
-    import statsmodels.graphics.tsaplots as tsaplots
+import statsmodels.graphics.tsaplots as tsaplots
     # Extract residuals
-    residuals = model.resid
+residuals = model.resid
     # Plot ACF
-    plt.figure(figsize=(10, 5))
-    tsaplots.plot_acf(residuals, lags=20, alpha=0.05)
-    plt.xlabel("Lag")
-    plt.ylabel("Autocorrelation")
-    plt.title("Autocorrelation of Residuals")
-    plt.savefig("residual_acf.png")
-    plt.show()
+plt.figure(figsize=(10, 5)) tsaplots.plot_acf(residuals, lags=20, alpha=0.05) plt.xlabel("Lag") plt.ylabel("Autocorrelation") plt.title("Autocorrelation of Residuals") plt.savefig("residual_acf.png") plt.show()
 
 Autocorrelation Function (ACF) Plot confirms serial correlation. The spike at lag 1 indicates strong autocorrelation. Most of the other lags remain within the confidence bands, meaning the issue is primarily at lower lags. The plot supports the Breusch-Godfrey test result.
 
