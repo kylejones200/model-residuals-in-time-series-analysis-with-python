@@ -140,36 +140,37 @@ def rolling_origin_metrics(
     return metrics, last_truth, last_forecast
 
 
-def plot_error_analysis(series: pd.Series, metrics: List[dict], last_true: pd.Series, last_forecast: pd.Series, config: Config) -> None:
+def plot_error_analysis(series: pd.Series, metrics: List[dict], last_true: pd.Series, last_forecast: pd.Series, config: Config, plot: bool = False) -> None:
     """Plot error analysis."""
-    fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+    if plot:
+        fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
     
     # Forecast plot
-    axes[0].plot(series.index[-100:], series.values[-100:], "k-", lw=1.5, label="History", alpha=0.8)
-    if last_true is not None:
-        axes[0].plot(last_true.index, last_true.values, "b-", lw=1.8, label="Actual", alpha=0.8)
-    if last_forecast is not None:
-        axes[0].plot(last_forecast.index, last_forecast.values, "r--", lw=2.0, label="Seasonal Naive Forecast", alpha=0.8)
+        axes[0].plot(series.index[-100:], series.values[-100:], "k-", lw=1.5, label="History", alpha=0.8)
+        if last_true is not None:
+            axes[0].plot(last_true.index, last_true.values, "b-", lw=1.8, label="Actual", alpha=0.8)
+        if last_forecast is not None:
+            axes[0].plot(last_forecast.index, last_forecast.values, "r--", lw=2.0, label="Seasonal Naive Forecast", alpha=0.8)
     
-    axes[0].set_ylabel("Value")
-    axes[0].set_title("Seasonal Naive Forecast")
-    axes[0].legend(loc="best")
-    axes[0].grid(True, alpha=0.3)
+        axes[0].set_ylabel("Value")
+        axes[0].set_title("Seasonal Naive Forecast")
+        axes[0].legend(loc="best")
+        axes[0].grid(True, alpha=0.3)
     
     # Error metrics over folds
-    if metrics:
-        metrics_df = pd.DataFrame(metrics)
-        axes[1].plot(range(len(metrics_df)), metrics_df["MAE"], "o-", lw=1.5, label="MAE", alpha=0.8)
-        axes[1].plot(range(len(metrics_df)), metrics_df["MASE"], "s-", lw=1.5, label="MASE", alpha=0.8)
-        axes[1].set_xlabel("Fold")
-        axes[1].set_ylabel("Error Metric")
-        axes[1].set_title("Error Metrics Across Folds")
-        axes[1].legend(loc="best")
-        axes[1].grid(True, alpha=0.3)
+        if metrics:
+            metrics_df = pd.DataFrame(metrics)
+            axes[1].plot(range(len(metrics_df)), metrics_df["MAE"], "o-", lw=1.5, label="MAE", alpha=0.8)
+            axes[1].plot(range(len(metrics_df)), metrics_df["MASE"], "s-", lw=1.5, label="MASE", alpha=0.8)
+            axes[1].set_xlabel("Fold")
+            axes[1].set_ylabel("Error Metric")
+            axes[1].set_title("Error Metrics Across Folds")
+            axes[1].legend(loc="best")
+            axes[1].grid(True, alpha=0.3)
     
-    plt.tight_layout()
-    save_plot(fig, config.error_plot, dpi=300)
-    plt.close(fig)
+        plt.tight_layout()
+        save_plot(fig, config.error_plot, dpi=300)
+        plt.close(fig)
     logger.error(f" Error analysis plot saved -> {config.error_plot}")
 
 
