@@ -100,44 +100,36 @@ If serial correlation exists in a dynamic model, then the standard errors are bi
 
 There are several methods to test for serial correlation in residuals:
 
-- **Durbin-Watson Test:** A simple statistic for first-order autocorrelation.
+- Durbin-Watson Test: A simple statistic for first-order autocorrelation.
 
-- **Breusch-Godfrey Test:** A more general test that detects autocorrelation at higher lags.
+- Breusch-Godfrey Test: A more general test that detects autocorrelation at higher lags.
 
-- **Autocorrelation Function (ACF):** Plots correlations between residuals over different time lags.
+- Autocorrelation Function (ACF): Plots correlations between residuals over different time lags.
 
 Let's examine serial correlation in a distributed lag model using data from FRED: University of Michigan: Inflation Expectation (MICH).
 
-**Function to fetch data from FRED:**
-
+Function to fetch data from FRED:
 import statsmodels.api as sm import statsmodels.graphics.tsaplots as tsaplots from statsmodels.stats.diagnostic import acorr\_breusch\_godfrey from statsmodels.regression.linear\_model import GLS, GLSAR from datetime import datetime from pandas\_datareader import data as web import matplotlib.pyplot as plt from visualization import plot\_time\_series, plot\_decomposition} def get_fred_data(series_id, start_date="2000-01-01", end_date=None): if end_date is None: end_date = datetime.now().strftime("%Y-%m-%d") df = web.DataReader(series_id, 'fred', start_date, end_date) return df.dropna()
 
-**Fetch University of Michigan Consumer Sentiment Index (MICH):**
-
+Fetch University of Michigan Consumer Sentiment Index (MICH):
 series_id = "MICH" mich_data = get_fred_data(series_id) mich_data = mich_data.pct_change().dropna() # Convert to percentage change
 
-**Prepare DataFrame:**
-
+Prepare DataFrame:
 mich_data = mich_data.rename(columns={series_id: "MICH"}) mich_data["Date"] = mich_data.index # Ensure a date column for plotting
 
-**Create lagged MICH values:**
-
+Create lagged MICH values:
 for lag in range(1, 3): # Include 2 lags mich_data[f"MICH_lag{lag}"] = mich_data["MICH"].shift(lag)
 
-**Drop missing values due to lagging:**
-
+Drop missing values due to lagging:
 mich_data.dropna(inplace=True)
 
-**Define independent and dependent variables:**
-
+Define independent and dependent variables:
 X_lags = ["MICH", "MICH_lag1", "MICH_lag2"] X_matrix = sm.add_constant(mich_data[X_lags]) # Add intercept y_vector = mich_data["MICH"] # Target is MICH itself (can be changed)
 
-**Fit a distributed lag model:**
-
+Fit a distributed lag model:
 model = sm.OLS(y_vector, X_matrix).fit()
 
-**Perform the Breusch-Godfrey test for serial correlation:**
-
+Perform the Breusch-Godfrey test for serial correlation:
 bg_test = acorr_breusch_godfrey(model, nlags=2) print(f"Breusch-Godfrey Test p-value: {bg_test[1]:.4f}")
 
 Breusch-Godfrey Test (p-value = 0.0000) test checks for serial correlation in the residuals. A p-value of 0.0000 rejects the null hypothesis of no serial correlation. So we conclude that the residuals exhibit autocorrelation, suggesting that the model's errors are not independent.
@@ -188,6 +180,6 @@ Serial correlation is a common problem in dynamic models, particularly those inv
 
 ## Key Takeaways
 
-- **Durbin-Watson Test:** A simple statistic for first-order autocorrelation.
-- **Breusch-Godfrey Test:** A more general test that detects autocorrelation at higher lags.
-- **Autocorrelation Function (ACF):** Plots correlations between residuals over different time lags.
+- Durbin-Watson Test: A simple statistic for first-order autocorrelation.
+- Breusch-Godfrey Test: A more general test that detects autocorrelation at higher lags.
+- Autocorrelation Function (ACF): Plots correlations between residuals over different time lags.
