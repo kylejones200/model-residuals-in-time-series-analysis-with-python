@@ -170,7 +170,7 @@ def plot_error_analysis(series: pd.Series, metrics: List[dict], last_true: pd.Se
         plt.tight_layout()
         save_plot(fig, config.error_plot, dpi=300)
         plt.close(fig)
-    logger.error(f" Error analysis plot saved -> {config.error_plot}")
+    logger.error(f" Error analysis plot saved -> {config.error_plot}", exc_info=True)
 
 
 def main() -> None:
@@ -201,7 +201,7 @@ def main() -> None:
     logger.info("\nCreating visualization...")
     plot_error_analysis(series, metrics, last_true, last_forecast, config)
     
-    logger.error("\n Forecast error analysis complete")
+    logger.error("\n Forecast error analysis complete", exc_info=True)
 
 
 if __name__ == "__main__":
