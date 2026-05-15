@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import logging
@@ -15,7 +14,6 @@ logger = logging.getLogger(__name__)
 # Add src to path
 
 from dataclasses import dataclass
-from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,7 +23,6 @@ import pandas as pd
 from src import (
     load_config,
     ensure_output_dir,
-    get_output_dir,
     save_plot,
 )
 
@@ -104,11 +101,11 @@ def seasonal_naive_forecast(train: pd.Series, horizon: int, season: int) -> np.n
 
 def rolling_origin_metrics(
     series: pd.Series, config: Config
-) -> Tuple[List[dict], pd.Series, pd.Series]:
+) -> tuple[list[dict], pd.Series, pd.Series]:
     """Rolling origin evaluation with error metrics."""
     idx = np.arange(len(series))
     splitter = TimeSeriesSplit(n_splits=config.n_splits)
-    metrics: List[dict] = []
+    metrics: list[dict] = []
     last_truth = None
     last_forecast = None
     
@@ -139,7 +136,7 @@ def rolling_origin_metrics(
     return metrics, last_truth, last_forecast
 
 
-def plot_error_analysis(series: pd.Series, metrics: List[dict], last_true: pd.Series, last_forecast: pd.Series, config: Config, plot: bool = False) -> None:
+def plot_error_analysis(series: pd.Series, metrics: list[dict], last_true: pd.Series, last_forecast: pd.Series, config: Config, plot: bool = False) -> None:
     """Plot error analysis."""
     if plot:
         fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
@@ -193,7 +190,7 @@ def main() -> None:
     if metrics:
         mean_mae = np.mean([m["MAE"] for m in metrics])
         mean_mase = np.mean([m["MASE"] for m in metrics])
-        logger.info(f"\nRolling Origin Evaluation Results:")
+        logger.info("\nRolling Origin Evaluation Results:")
         logger.info(f"  Mean MAE: {mean_mae:.4f}")
         logger.info(f"  Mean MASE: {mean_mase:.4f}")
     
