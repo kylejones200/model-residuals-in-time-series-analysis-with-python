@@ -1,14 +1,16 @@
 data:
-  input_file: "Net_generation_United_States_all_sectors_monthly.csv"
-  date_col: "date"
-  value_col: "value"
-  freq: "MS"
-
+  input_file: Net_generation_United_States_all_sectors_monthly.csv
+  date_col: date
+  value_col: value
+  freq: MS
 evaluation:
   horizon: 12
   n_splits: 5
   season: 12
-
 output:
-  error_plot: "eia_errors_last_fold.png"
-  output_dir: "outputs"
+  error_plot: eia_errors_last_fold.png
+  output_dir: outputs
+cv:
+  n_splits: 5
+  strategy: time_series
+  gap: 0
