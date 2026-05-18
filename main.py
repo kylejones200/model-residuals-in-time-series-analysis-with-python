@@ -4,15 +4,8 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
-
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
-# Add src to path
-
 from dataclasses import dataclass
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,12 +13,19 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit
 
-# Import consolidated utilities (signalplot already applied in src/__init__.py)
 from src import (
     ensure_output_dir,
     load_config,
     save_plot,
 )
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+# Add src to path
+
+
+
+# Import consolidated utilities (signalplot already applied in src/__init__.py)
 
 
 @dataclass
@@ -47,10 +47,7 @@ def parse_config(config_dict: dict, script_dir: Path) -> Config:
     """Parse config dictionary into Config dataclass."""
     repo_root = script_dir.parent
     data_path = repo_root / "data" / config_dict["data"]["input_file"]
-    output_dir = ensure_output_dir(
-        Path(script_dir) / config_dict["output"]["output_dir"]
-    )
-
+    output_dir = ensure_output_dir(Path(script_dir) / config_dict["output"]["output_dir"])
     return Config(
         data_path=data_path,
         date_col=config_dict["data"]["date_col"],
@@ -70,10 +67,9 @@ def load_series(config: Config) -> pd.Series:
 
     series = load_time_series(
         str(config.data_path),
-        date_column=config.date_col,
-        value_column=config.value_col,
+        date_col=config.date_col,
+        value_col=config.value_col,
     )
-
     if config.freq:
         series = series.asfreq(config.freq)
 
@@ -110,24 +106,18 @@ def rolling_origin_metrics(
     metrics: list[dict] = []
     last_truth = None
     last_forecast = None
-
     for train_idx, _ in splitter.split(idx):
         end_idx = train_idx[-1]
         train_series = series.iloc[: end_idx + 1]
         future_series = series.iloc[end_idx + 1 : end_idx + 1 + config.horizon]
-
         if future_series.empty:
             continue
 
-        forecast_values = seasonal_naive_forecast(
-            train_series, len(future_series), config.season
-        )
+        forecast_values = seasonal_naive_forecast(train_series, len(future_series), config.season)
         forecast = pd.Series(forecast_values, index=future_series.index)
-
         mae_val = mean_absolute_error(future_series.values, forecast.values)
         mase_denom = mase_denominator(train_series, config.season)
         mase_val = mae_val / mase_denom if mase_denom > 0 else float("inf")
-
         metrics.append(
             {
                 "MAE": mae_val,
@@ -135,7 +125,6 @@ def rolling_origin_metrics(
                 "n_points": len(future_series),
             }
         )
-
         last_truth = future_series
         last_forecast = forecast
 
@@ -153,7 +142,6 @@ def plot_error_analysis(
     """Plot error analysis."""
     if plot:
         fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
-
         # Forecast plot
         axes[0].plot(
             series.index[-100:],
@@ -186,7 +174,6 @@ def plot_error_analysis(
         axes[0].set_title("Seasonal Naive Forecast")
         axes[0].legend(loc="best")
         axes[0].grid(True, alpha=0.3)
-
         # Error metrics over folds
         if metrics:
             metrics_df = pd.DataFrame(metrics)
@@ -213,7 +200,7 @@ def plot_error_analysis(
             axes[1].grid(True, alpha=0.3)
 
         plt.tight_layout()
-        save_plot(fig, config.error_plot, dpi=300)
+        fig.savefig(config.error_plot, dpi=300, bbox_inches="tight")
         plt.close(fig)
     logger.error(f" Error analysis plot saved -> {config.error_plot}", exc_info=True)
 
@@ -221,20 +208,15 @@ def plot_error_analysis(
 def main() -> None:
     """Main execution function."""
     script_dir = Path(__file__).parent
-
     # Load configuration using consolidated loader
     config_dict = load_config()
-
     # Parse into Config dataclass
     config = parse_config(config_dict, script_dir)
-
     # Load series
     series = load_series(config)
     logger.info(f"Loaded {len(series)} data points")
-
     # Rolling origin evaluation
     metrics, last_true, last_forecast = rolling_origin_metrics(series, config)
-
     if metrics:
         mean_mae = np.mean([m["MAE"] for m in metrics])
         mean_mase = np.mean([m["MASE"] for m in metrics])
@@ -245,7 +227,6 @@ def main() -> None:
     # Create visualization
     logger.info("\nCreating visualization...")
     plot_error_analysis(series, metrics, last_true, last_forecast, config)
-
     logger.error("\n Forecast error analysis complete", exc_info=True)
 
 
